@@ -2,14 +2,38 @@
 #include <algorithm>
 #include <iostream>
 
+#define DEBUG
+
 namespace interpreter
 {
 	class Program
 	{
 	private:
 		std::string* _lines;
-		int _len;
+		int _linesLen;
 		std::string _programText;
+
+		inline void initLines()
+		{
+			int currentLineIndex = 0;
+			int lineIndex = 0;
+			for(int i = 0; i < _programText.length(); i++)
+			{
+				if (_programText[i] == '\n') 
+				{
+					_lines[lineIndex] = _programText.substr(currentLineIndex, i - currentLineIndex);
+					lineIndex++;
+					currentLineIndex = i + 1;
+				}
+			}
+			_lines[lineIndex] = _programText.substr(currentLineIndex, _programText.length() - 1);
+		}
+
+		inline void countLines()
+		{
+			_linesLen = std::count(_programText.begin(), _programText.end(), '\n') + 1;
+		}
+
 		inline void deleteEmptyLines()
 		{
 			for (int i = 0; i < _programText.length(); i++)
@@ -20,15 +44,35 @@ namespace interpreter
 					i--;
 				}
 			}
-			std::cout << "code: " << _programText;
 		}
+
+		inline void deleteWasteSpaces()
+		{
+
+		}
+
 	public:
 		Program(std::string program)
 		{
 			_programText = program;
 			deleteEmptyLines();
-			_len = std::count(program.begin(), program.end(), '\n') + 1;
-			_lines = (std::string*)malloc(sizeof(std::string) * _len);
+#ifdef DEBUG
+			std::cout << "input code:\n" << _programText << "\n\n";
+#endif // DEBUG
+			countLines();
+#ifdef DEBUG
+			std::cout << "number of lines:" << _linesLen << "\n\n";
+#endif // DEBUG
+			_lines = new std::string[_linesLen];
+			initLines();
+#ifdef DEBUG
+			std::cout << "lines of code:\n";
+			for (int i = 0; i < _linesLen; i++)
+			{
+				std::cout << _lines[i] << "\n";
+			}
+#endif // DEBUG
+
 		}
 	};
 
@@ -44,12 +88,15 @@ namespace interpreter
 			_name = name;
 			_line = line;
 		}
+
 		Label()
 		{
 			_name = "";
 			_line = -1;
 		}
+
 		inline std::string getName() { return _name; };
+
 		inline int getLine() { return _line; };
 	};
 
@@ -58,10 +105,10 @@ namespace interpreter
 	private:
 		Label table[64];
 	public:
-		LabelsTable(std::string program)
+		LabelsTable(std::string programText)
 		{
-
 		}
+
 		Label& operator[](const std::string name)
 		{
 			for (Label& label : table)
