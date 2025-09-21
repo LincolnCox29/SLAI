@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <iostream>
 #include <vector>
+#include <unordered_set>
+#include <iomanip>
 
 #define DEBUG
 
@@ -22,12 +24,47 @@ namespace SLAI
 		std::string _name;
 		int _value;
 		type _type;
+		std::vector<int> callStack;
+
+		void spotType()
+		{
+			static const std::unordered_set<std::string> commands = {
+				"mov", "inc", "dec", "add", "sub", "mul", "div",
+				"jmp", "cmp", "je", "jne", "jg", "jge", "jl", "jle",
+				"call", "ret", "msg", "end"
+			};
+			try
+			{
+				std::stoi(_name);
+				_type = CONST;
+				return;
+			}
+			catch (const std::invalid_argument& e) {}
+			if (_name[0] == '\'' && _name.back() == '\'')
+			{
+				_type = STRING;
+			}
+			else if (commands.find(_name) != commands.end())
+			{
+				_type = COMMAND;
+			}
+			else if (_name.back() == ':')
+			{
+				_type = LABEL;
+			}
+			else
+			{
+				_type = VARIABLE;
+			}
+		}
+
 	public:
 		Token(std::string name)
 		{
 			_name = name;
-			_type = CONST;
-			_value = 0;
+			
+			spotType();
+			_value = _type == CONST ? std::stoi(_name) : 0;
 		}
 		std::string getName() { return _name; };
 		int getValue() { return _value; };
@@ -185,9 +222,19 @@ namespace SLAI
 			std::cout << "tokens:\n";
 			for (Token token : _tokensTable)
 			{
-				std::cout << token.getName() << "\n";
+				std::cout << token.getName()<< "   " << token.getType() << " " << token.getValue() << "\n";
 			}
 #endif // DEBUG
+		}
+
+		void interpret()
+		{
+			std::string cmd;
+
+			while (cmd != "end")
+			{
+
+			}
 		}
 	};
 }
@@ -196,7 +243,7 @@ std::string assembler_interpreter(std::string programText)
 {
 	SLAI::Interpreter program = SLAI::Interpreter(programText);
 
-	return "qwe";
+	return "output";
 }
 
 int main()
