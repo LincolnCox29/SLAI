@@ -3,7 +3,9 @@
 #include <iostream>
 #include <vector>
 #include <unordered_set>
+#include <unordered_map>
 #include <iomanip>
+#include <optional>
 
 #define DEBUG
 
@@ -22,7 +24,6 @@ namespace SLAI
 	{
 	private:
 		std::string _name;
-		int _value;
 		type _type;
 		std::vector<int> callStack;
 
@@ -64,20 +65,19 @@ namespace SLAI
 			_name = name;
 			
 			spotType();
-			_value = _type == CONST ? std::stoi(_name) : 0;
 		}
 		std::string getName() { return _name; };
-		int getValue() { return _value; };
 		enum type getType() { return _type; };
 	};
 
 	class Interpreter
 	{
 	private:
+		std::unordered_map<std::string, int> _variables;
 		std::string* _lines;
 		int _linesLen;
 		std::string _programText;
-		std::vector<Token> _tokensTable;
+		std::vector<Token> _tokensStack;
 
 		inline void initLines()
 		{
@@ -168,7 +168,7 @@ namespace SLAI
 						{
 							if (si > tokenStart)
 							{
-								_tokensTable.push_back(Token(line.substr(tokenStart, si - tokenStart + 1)));
+								_tokensStack.push_back(Token(line.substr(tokenStart, si - tokenStart + 1)));
 							}
 							tokenStart = si + 1;
 							isStr = false;
@@ -179,7 +179,7 @@ namespace SLAI
 					{
 						if (si > tokenStart)
 						{
-							_tokensTable.push_back(Token(line.substr(tokenStart, si - tokenStart)));
+							_tokensStack.push_back(Token(line.substr(tokenStart, si - tokenStart)));
 						}
 						tokenStart = si + 1;
 					}
@@ -187,7 +187,18 @@ namespace SLAI
 				}
 				if (tokenStart < line.length())
 				{
-					_tokensTable.push_back(Token(line.substr(tokenStart)));
+					_tokensStack.push_back(Token(line.substr(tokenStart)));
+				}
+			}
+		}
+
+		inline void initVariablesMap()
+		{
+			for (Token token : _tokensStack)
+			{
+				if (token.getType() == VARIABLE)
+				{
+					_variables[token.getName()] = 0;
 				}
 			}
 		}
@@ -216,24 +227,88 @@ namespace SLAI
 				std::replace(lineWithVisibleSpaces.begin(), lineWithVisibleSpaces.end(), ' ', '_');
 				std::cout << lineWithVisibleSpaces << "\n";
 			}
+			std::cout << "\n";
 #endif // DEBUG
 			tokenization();
 #ifdef DEBUG
 			std::cout << "tokens:\n";
-			for (Token token : _tokensTable)
+			for (Token token : _tokensStack)
 			{
-				std::cout << token.getName()<< "   " << token.getType() << " " << token.getValue() << "\n";
+				std::cout << token.getName()<< "   " << token.getType() << "\n";
 			}
 #endif // DEBUG
+			initVariablesMap();
 		}
 
 		void interpret()
 		{
 			std::string cmd;
-
+			int tokenIndex = 0;
 			while (cmd != "end")
 			{
-
+				Token token = _tokensStack[tokenIndex];
+				if (token.getType() != COMMAND)
+				{
+					throw "The first token in the line must be of type COMMAND";
+					break;
+				}
+				Token subtoken1 = _tokensStack[tokenIndex + 1];
+				Token subtoken2 = _tokensStack[tokenIndex + 2];
+				if (token.getName() == "mov")
+				{
+					if (subtoken1.getType() != VARIABLE)
+					{
+						break;
+					}
+					if (subtoken2.getType() == VARIABLE)
+					{
+						_variables[subtoken1.getName()] += _variables[subtoken2.getName()];
+					}
+					else if (subtoken2.getType() == CONST)
+					{
+						_variables[subtoken1.getName()] += std::stoi(subtoken2.getName());
+					}
+					tokenIndex += 3;
+				}
+				else if (token.getName() == "inc")
+				{
+					if (subtoken1.getType() != VARIABLE)
+					{
+						break;
+					}
+					_variables[subtoken1.getName()]++;
+					tokenIndex += 2;
+				}
+				else if (token.getName() == "msg")
+				{
+					tokenIndex++;
+					int argsIndex = tokenIndex;
+					while (_tokensStack[argsIndex].getType() != COMMAND)
+					{
+						if (_tokensStack[argsIndex].getType() == CONST)
+						{
+							std::cout << std::stoi(_tokensStack[argsIndex].getName());
+						}
+						else if (_tokensStack[argsIndex].getType() == VARIABLE)
+						{
+							std::cout << _variables[_tokensStack[argsIndex].getName()];
+						}
+						else if (_tokensStack[argsIndex].getType() == STRING)
+						{
+							std::cout << _tokensStack[argsIndex].getName();
+						}
+						else
+						{
+							break;
+						}
+						argsIndex++;
+					}
+					tokenIndex = argsIndex;
+				}
+				else
+				{
+					break;
+				}
 			}
 		}
 	};
@@ -242,6 +317,7 @@ namespace SLAI
 std::string assembler_interpreter(std::string programText)
 {
 	SLAI::Interpreter program = SLAI::Interpreter(programText);
+	program.interpret();
 
 	return "output";
 }
@@ -252,24 +328,11 @@ int main()
 	; My first program
 	mov  a 5
 	inc a
-	call function
-	msg  '(5+1)/2 = ' a    ; output message
+	;call function
+	msg  '5+1 = ' a    ; output message
 	end
 
 	function:
-		div  a 2
-		ret
-
-
-
-
-	zxc:
-		div  a 2
-		ret
-
-
-
-	mlc:
 		div  a 2
 		ret)";
 	assembler_interpreter(program);
