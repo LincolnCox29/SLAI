@@ -48,20 +48,51 @@ namespace interpreter
 
 		inline void deleteWasteSpaces()
 		{
+			_programText.erase(std::remove(_programText.begin(), _programText.end(), '\t'), _programText.end());
+			for (int i = 0; i < _programText.length(); i++)
+			{
+				if (_programText[i] == ' ' && ((i == 0) || _programText[i + 1] == '\n' || _programText[i + 1] == ' '))
+				{
+					_programText.erase(i, 1);
+					i--;
+				}
+			}
+		}
 
+		inline void deleteComments()
+		{
+			for (int i = 0; i < _programText.length(); i++)
+			{
+				if (_programText[i] == ';')
+				{
+					const auto start_it = _programText.begin() + i;
+					const auto newline_it = std::find(start_it, _programText.end(), '\n');
+
+					if (newline_it != _programText.end()) 
+					{
+						_programText.erase(start_it, newline_it);
+					}
+					else 
+					{
+						_programText.erase(start_it, _programText.end());
+					}
+				}
+			}
 		}
 
 	public:
 		Program(std::string program)
 		{
 			_programText = program;
+			deleteComments();
+			deleteWasteSpaces();
 			deleteEmptyLines();
 #ifdef DEBUG
 			std::cout << "input code:\n" << _programText << "\n\n";
 #endif // DEBUG
 			countLines();
 #ifdef DEBUG
-			std::cout << "number of lines:" << _linesLen << "\n\n";
+			std::cout << "number of lines: " << _linesLen << "\n\n";
 #endif // DEBUG
 			_lines = new std::string[_linesLen];
 			initLines();
@@ -69,7 +100,9 @@ namespace interpreter
 			std::cout << "lines of code:\n";
 			for (int i = 0; i < _linesLen; i++)
 			{
-				std::cout << _lines[i] << "\n";
+				std::string lineWithVisibleSpaces = std::string(_lines[i]);
+				std::replace(lineWithVisibleSpaces.begin(), lineWithVisibleSpaces.end(), ' ', '_');
+				std::cout << lineWithVisibleSpaces << "\n";
 			}
 #endif // DEBUG
 
@@ -130,10 +163,10 @@ std::string assembler_interpreter(std::string programText)
 
 int main()
 {
-	std::string program = R"(
+	std::string program = R"( 
 	; My first program
 	mov  a, 5
-	inc  a
+	inc a
 	call function
 	msg  '(5+1)/2 = ', a    ; output message
 	end
