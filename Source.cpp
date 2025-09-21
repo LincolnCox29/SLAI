@@ -1,17 +1,46 @@
 #include <string>
 #include <algorithm>
 #include <iostream>
+#include <vector>
 
 #define DEBUG
 
-namespace interpreter
+namespace SLAI
 {
-	class Program
+	enum type
+	{
+		CONST,
+		VARIABLE,
+		COMMAND,
+		LABEL,
+		STRING
+	};
+
+	class Token
+	{
+	private:
+		std::string _name;
+		int _value;
+		type _type;
+	public:
+		Token(std::string name)
+		{
+			_name = name;
+			_type = CONST;
+			_value = 0;
+		}
+		std::string getName() { return _name; };
+		int getValue() { return _value; };
+		enum type getType() { return _type; };
+	};
+
+	class Interpreter
 	{
 	private:
 		std::string* _lines;
 		int _linesLen;
 		std::string _programText;
+		std::vector<Token> _tokensTable;
 
 		inline void initLines()
 		{
@@ -80,8 +109,54 @@ namespace interpreter
 			}
 		}
 
+		void tokenization()
+		{
+			for (int li = 0; li < _linesLen; li++)
+			{
+				std::string& line = _lines[li];
+				int tokenStart = 0;
+				int si = 0;
+				bool isStr = 0;
+				while (si < line.length())
+				{
+					if (line[si] == '\'')
+					{
+						if (!isStr)
+						{
+							isStr = true;
+							si++;
+							continue;
+						}
+						else
+						{
+							if (si > tokenStart)
+							{
+								_tokensTable.push_back(Token(line.substr(tokenStart, si - tokenStart + 1)));
+							}
+							tokenStart = si + 1;
+							isStr = false;
+						}
+
+					}
+					else if (line[si] == ' ' && !isStr)
+					{
+						if (si > tokenStart)
+						{
+							_tokensTable.push_back(Token(line.substr(tokenStart, si - tokenStart)));
+						}
+						tokenStart = si + 1;
+					}
+					si++;
+				}
+				if (tokenStart < line.length())
+				{
+					_tokensTable.push_back(Token(line.substr(tokenStart)));
+				}
+			}
+		}
+
 	public:
-		Program(std::string program)
+		Interpreter(std::string program)
 		{
 			_programText = program;
 			deleteComments();
@@ -105,87 +180,50 @@ namespace interpreter
 				std::cout << lineWithVisibleSpaces << "\n";
 			}
 #endif // DEBUG
-
-		}
-	};
-
-	static class Label
-	{
-		friend class LabelsTable;
-	private:
-		std::string _name;
-		int _line;
-	public:
-		Label(std::string name, int line)
-		{
-			_name = name;
-			_line = line;
-		}
-
-		Label()
-		{
-			_name = "";
-			_line = -1;
-		}
-
-		inline std::string getName() { return _name; };
-
-		inline int getLine() { return _line; };
-	};
-
-	class LabelsTable
-	{
-	private:
-		Label table[64];
-	public:
-		LabelsTable(std::string programText)
-		{
-		}
-
-		Label& operator[](const std::string name)
-		{
-			for (Label& label : table)
+			tokenization();
+#ifdef DEBUG
+			std::cout << "tokens:\n";
+			for (Token token : _tokensTable)
 			{
-				if (label.getName() == name)
-					return label;
+				std::cout << token.getName() << "\n";
 			}
-			throw "Label not found";
+#endif // DEBUG
 		}
 	};
 }
 
 std::string assembler_interpreter(std::string programText)
 {
-	interpreter::Program program = interpreter::Program(programText);
+	SLAI::Interpreter program = SLAI::Interpreter(programText);
 
 	return "qwe";
 }
 
 int main()
 {
-	std::string program = R"( 
+	std::string program = R"(
 	; My first program
-	mov  a, 5
+	mov  a 5
 	inc a
 	call function
-	msg  '(5+1)/2 = ', a    ; output message
+	msg  '(5+1)/2 = ' a    ; output message
 	end
 
 	function:
-		div  a, 2
+		div  a 2
 		ret
 
 
 
 
 	zxc:
-		div  a, 2
+		div  a 2
 		ret
 
 
 
 	mlc:
-		div  a, 2
+		div  a 2
 		ret)";
 	assembler_interpreter(program);
 }
