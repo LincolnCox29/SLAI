@@ -7,6 +7,8 @@
 #include <iomanip>
 #include <optional>
 
+#include <functional>
+
 #define DEBUG
 
 namespace SLAI
@@ -203,6 +205,32 @@ namespace SLAI
 			}
 		}
 
+		inline void execArithmeticCommand(const std::string& command, int& target, int value)
+		{
+			static std::unordered_map<std::string, std::function<void(int&, int)>> commands =
+			{
+				{"mov", [](int& t, int v) { t = v; }},
+				{"add", [](int& t, int v) { t += v; }},
+				{"sub", [](int& t, int v) { t -= v; }},
+				{"mul", [](int& t, int v) { t *= v; }},
+				{"div", [](int& t, int v) { if (v != 0) t /= v; }}
+			};
+
+			if (commands.find(command) != commands.end())
+			{
+				commands[command](target, value);
+			}
+		}
+
+		inline bool isArithmeticCommand(std::string command)
+		{
+			static const std::unordered_set<std::string> validCommands = 
+			{
+				"mov", "add", "sub", "div", "mul"
+			};
+			return validCommands.find(command) != validCommands.end();
+		}
+
 	public:
 		Interpreter(std::string program)
 		{
@@ -252,9 +280,13 @@ namespace SLAI
 					throw "The first token in the line must be of type COMMAND";
 					break;
 				}
+				if (token.getName() == "end")
+				{
+					return;
+				}
 				Token subtoken1 = _tokensStack[tokenIndex + 1];
 				Token subtoken2 = _tokensStack[tokenIndex + 2];
-				if (token.getName() == "mov")
+				if (isArithmeticCommand(token.getName()))
 				{
 					if (subtoken1.getType() != VARIABLE)
 					{
@@ -262,21 +294,21 @@ namespace SLAI
 					}
 					if (subtoken2.getType() == VARIABLE)
 					{
-						_variables[subtoken1.getName()] += _variables[subtoken2.getName()];
+						execArithmeticCommand(token.getName(), _variables[subtoken1.getName()], _variables[subtoken2.getName()]);
 					}
 					else if (subtoken2.getType() == CONST)
 					{
-						_variables[subtoken1.getName()] += std::stoi(subtoken2.getName());
+						execArithmeticCommand(token.getName(), _variables[subtoken1.getName()], std::stoi(subtoken2.getName()));
 					}
 					tokenIndex += 3;
 				}
-				else if (token.getName() == "inc")
+				else if (token.getName() == "inc" || token.getName() == "dec")
 				{
 					if (subtoken1.getType() != VARIABLE)
 					{
 						break;
 					}
-					_variables[subtoken1.getName()]++;
+					_variables[subtoken1.getName()] += token.getName() == "inc" ? 1 : -1;
 					tokenIndex += 2;
 				}
 				else if (token.getName() == "msg")
@@ -332,8 +364,8 @@ int main()
 	msg  '5+1 = ' a    ; output message
 	end
 
-	function:
-		div  a 2
-		ret)";
+	;function:
+	;	div  a 2
+	;	ret)";
 	assembler_interpreter(program);
 }
