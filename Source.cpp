@@ -9,7 +9,7 @@
 
 #include <functional>
 
-#define DEBUG
+//#define DEBUG
 
 namespace SLAI
 {
@@ -46,6 +46,7 @@ namespace SLAI
 			if (_name[0] == '\'' && _name.back() == '\'')
 			{
 				_type = STRING;
+				_name = _name.substr(1, _name.length() - 2);
 			}
 			else if (commands.find(_name) != commands.end())
 			{
@@ -270,77 +271,90 @@ namespace SLAI
 
 		void interpret()
 		{
-			std::string cmd;
+		    std::string cmd;
 			int tokenIndex = 0;
-			while (cmd != "end")
+			try
 			{
-				Token token = _tokensStack[tokenIndex];
-				if (token.getType() != COMMAND)
+				while (cmd != "end")
 				{
-					throw "The first token in the line must be of type COMMAND";
-					break;
-				}
-				if (token.getName() == "end")
-				{
-					return;
-				}
-				Token subtoken1 = _tokensStack[tokenIndex + 1];
-				Token subtoken2 = _tokensStack[tokenIndex + 2];
-				if (isArithmeticCommand(token.getName()))
-				{
-					if (subtoken1.getType() != VARIABLE)
+					if (tokenIndex + 1 > _tokensStack.size())
 					{
-						break;
+						throw "The command \"end\" was not found.";
 					}
-					if (subtoken2.getType() == VARIABLE)
+				    Token token = _tokensStack[tokenIndex];
+					cmd = token.getName();
+					if (token.getType() != COMMAND)
 					{
-						execArithmeticCommand(token.getName(), _variables[subtoken1.getName()], _variables[subtoken2.getName()]);
+						throw "The first token in the line must be of type COMMAND";
 					}
-					else if (subtoken2.getType() == CONST)
+					if (cmd == "end")
 					{
-						execArithmeticCommand(token.getName(), _variables[subtoken1.getName()], std::stoi(subtoken2.getName()));
+						return;
 					}
-					tokenIndex += 3;
-				}
-				else if (token.getName() == "inc" || token.getName() == "dec")
-				{
-					if (subtoken1.getType() != VARIABLE)
+					Token subtoken1 = _tokensStack[tokenIndex + 1];
+					if (cmd == "inc" || cmd == "dec")
 					{
-						break;
-					}
-					_variables[subtoken1.getName()] += token.getName() == "inc" ? 1 : -1;
-					tokenIndex += 2;
-				}
-				else if (token.getName() == "msg")
-				{
-					tokenIndex++;
-					int argsIndex = tokenIndex;
-					while (_tokensStack[argsIndex].getType() != COMMAND)
-					{
-						if (_tokensStack[argsIndex].getType() == CONST)
-						{
-							std::cout << std::stoi(_tokensStack[argsIndex].getName());
-						}
-						else if (_tokensStack[argsIndex].getType() == VARIABLE)
-						{
-							std::cout << _variables[_tokensStack[argsIndex].getName()];
-						}
-						else if (_tokensStack[argsIndex].getType() == STRING)
-						{
-							std::cout << _tokensStack[argsIndex].getName();
-						}
-						else
+						if (subtoken1.getType() != VARIABLE)
 						{
 							break;
 						}
-						argsIndex++;
+						_variables[subtoken1.getName()] += cmd == "inc" ? 1 : -1;
+						tokenIndex += 2;
+						continue;
 					}
-					tokenIndex = argsIndex;
+					Token subtoken2 = _tokensStack[tokenIndex + 2];
+					if (isArithmeticCommand(cmd))
+					{
+						if (subtoken1.getType() != VARIABLE)
+						{
+							break;
+						}
+						if (subtoken2.getType() == VARIABLE || subtoken2.getType() == CONST)
+						{
+							execArithmeticCommand(cmd, _variables[subtoken1.getName()], 
+								subtoken2.getType() == VARIABLE ? _variables[subtoken2.getName()] : std::stoi(subtoken2.getName()));
+						}
+						else
+						{
+							throw "Invalid operand type";
+						}
+						tokenIndex += 3;
+					}
+					else if (cmd == "msg")
+					{
+						tokenIndex++;
+						int argsIndex = tokenIndex;
+						while (_tokensStack[argsIndex].getType() != COMMAND)
+						{
+							switch (_tokensStack[argsIndex].getType())
+							{
+								case CONST:
+									std::cout << std::stoi(_tokensStack[argsIndex].getName());
+									break;
+								case VARIABLE:
+									std::cout << _variables[_tokensStack[argsIndex].getName()];
+									break;
+								case STRING:
+									std::cout << _tokensStack[argsIndex].getName();
+									break;
+								default:
+									break;
+							}
+							argsIndex++;
+							if (argsIndex == _tokensStack.size())
+							{
+								std::cout << "\n";
+								throw "The command \"end\" was not found.";
+							}
+						}
+						std::cout << "\n";
+						tokenIndex = argsIndex;
+					}
 				}
-				else
-				{
-					break;
-				}
+			}
+			catch (const char* error)
+			{
+				std::cerr << "ERROR: " << error << std::endl;
 			}
 		}
 	};
@@ -357,15 +371,20 @@ std::string assembler_interpreter(std::string programText)
 int main()
 {
 	std::string program = R"(
-	; My first program
-	mov  a 5
+	mov a 4 
 	inc a
-	;call function
-	msg  '5+1 = ' a    ; output message
-	end
-
-	;function:
-	;	div  a 2
-	;	ret)";
+    msg  '4 + 1 = ' a
+    inc a
+	mov b 9
+    dec b
+    msg  '9 - 1 = ' b
+    mul a 3
+    msg  '5 * 3 = ' a
+	add a b
+	msg  '15 + 8 = ' a
+	sub a 2
+    msg  '23 - 2 = ' a
+	div b 2
+    msg  '8 / 2 = ' b)";
 	assembler_interpreter(program);
 }
