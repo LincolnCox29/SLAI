@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <string>
+#include <unordered_map>
 
 namespace SLAI 
 {
@@ -30,6 +31,7 @@ namespace SLAI
 		Token(std::string name);
 		std::string getName() { return _name; };
 		enum type getType() { return _type; };
+		void print(std::unordered_map<std::string, int>& variables);
 	};
 }
 

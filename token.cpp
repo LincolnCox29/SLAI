@@ -1,6 +1,9 @@
 #include "token.h"
 #include <unordered_set>
+#include <unordered_map>
 #include <iomanip>
+
+#include <iostream>
 
 namespace SLAI 
 {
@@ -42,5 +45,23 @@ namespace SLAI
 		_name = name;
 
 		spotType();
+	}
+
+	void Token::print(std::unordered_map<std::string, int>& variables)
+	{
+		switch (_type)
+		{
+		case CONST:
+			std::cout << std::stoi(_name);
+			break;
+		case VARIABLE:
+			std::cout << variables[_name];
+			break;
+		case STRING:
+			std::cout << _name;
+			break;
+		default:
+			break;
+		}
 	}
 }

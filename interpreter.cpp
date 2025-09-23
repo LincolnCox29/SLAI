@@ -218,7 +218,7 @@ namespace SLAI
 				{
 					if (subtoken1.getType() != VARIABLE)
 					{
-						break;
+						throw "The first operand must be VARIABLE";
 					}
 					_variables[subtoken1.getName()] += cmd == "inc" ? 1 : -1;
 					tokenIndex += 2;
@@ -229,7 +229,7 @@ namespace SLAI
 				{
 					if (subtoken1.getType() != VARIABLE)
 					{
-						break;
+						throw "The first operand must be VARIABLE";
 					}
 					if (subtoken2.getType() == VARIABLE || subtoken2.getType() == CONST)
 					{
@@ -248,20 +248,7 @@ namespace SLAI
 					int argsIndex = tokenIndex;
 					while (_tokensStack[argsIndex].getType() != COMMAND)
 					{
-						switch (_tokensStack[argsIndex].getType())
-						{
-						case CONST:
-							std::cout << std::stoi(_tokensStack[argsIndex].getName());
-							break;
-						case VARIABLE:
-							std::cout << _variables[_tokensStack[argsIndex].getName()];
-							break;
-						case STRING:
-							std::cout << _tokensStack[argsIndex].getName();
-							break;
-						default:
-							break;
-						}
+						_tokensStack[argsIndex].print(_variables);
 						argsIndex++;
 						if (argsIndex == _tokensStack.size())
 						{
