@@ -1,0 +1,36 @@
+#pragma once
+
+#ifndef TOKEN_H
+#define TOKEN_H
+
+#include <vector>
+#include <string>
+
+namespace SLAI 
+{
+	enum type
+	{
+		CONST,
+		VARIABLE,
+		COMMAND,
+		LABEL,
+		STRING
+	};
+
+	class Token
+	{
+	private:
+		std::string _name;
+		type _type;
+		std::vector<int> callStack;
+
+		void spotType();
+
+	public:
+		Token(std::string name);
+		std::string getName() { return _name; };
+		enum type getType() { return _type; };
+	};
+}
+
+#endif // TOKEN_H
