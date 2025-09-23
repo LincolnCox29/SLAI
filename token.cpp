@@ -58,7 +58,7 @@ namespace SLAI
 		}
 	}
 
-	Token::Token(std::string name)
+	Token::Token(const std::string& name)
 	{
 		_name = name;
 

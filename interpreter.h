@@ -35,14 +35,14 @@ namespace SLAI
 
 		void tokenization();
 
-		size_t findLabelPosition(std::string name);
+		size_t findLabelPosition(const std::string& name);
 
 		inline void initVariablesMap();
 
-		inline void execArithmeticCommand(const std::string& command, int& target, int value);
+		inline void execArithmeticCommand(const std::string& command, int& target, const int value);
 
 	public:
-		Interpreter(std::string program);
+		Interpreter(const std::string& program);
 
 		void interpret();
 	};

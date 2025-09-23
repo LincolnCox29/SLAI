@@ -30,9 +30,9 @@ namespace SLAI
 	public:
 		bool isJumpToken();
 		bool isArithmeticToken();
-		Token(std::string name);
-		std::string getName() { return _name; };
-		enum type getType() { return _type; };
+		Token(const std::string& name);
+		const std::string& getName() const { return _name; };
+		const enum type& getType() const { return _type; };
 		void print(std::unordered_map<std::string, int>& variables);
 	};
 }

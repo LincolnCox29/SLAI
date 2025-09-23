@@ -76,7 +76,7 @@ namespace SLAI
 	{
 		for (int li = 0; li < _linesLen; li++)
 		{
-			std::string& line = _lines[li];
+			const std::string& line = _lines[li];
 			int tokenStart = 0;
 			int si = 0;
 			bool isStr = 0;
@@ -120,7 +120,7 @@ namespace SLAI
 
 	inline void Interpreter::initVariablesMap()
 	{
-		for (Token token : _tokensStack)
+		for (const Token& token : _tokensStack)
 		{
 			if (token.getType() == VARIABLE || token.getType() == CONST)
 			{
@@ -129,7 +129,7 @@ namespace SLAI
 		}
 	}
 
-	inline void Interpreter::execArithmeticCommand(const std::string& command, int& target, int value)
+	inline void Interpreter::execArithmeticCommand(const std::string& command, int& target, const int value)
 	{
 		static std::unordered_map<std::string, std::function<void(int&, int)>> commands =
 		{
@@ -146,7 +146,7 @@ namespace SLAI
 		}
 	}
 
-	Interpreter::Interpreter(std::string program)
+	Interpreter::Interpreter(const std::string& program)
 	{
 		_programText = program;
 		deleteComments();
@@ -182,7 +182,7 @@ namespace SLAI
 		initVariablesMap();
 	}
 
-	static inline void throwFirstOperandIstVARIABLE(Token token)
+	static inline void throwFirstOperandIstVARIABLE(const Token& token)
 	{
 		if (token.getType() != VARIABLE)
 		{
@@ -190,7 +190,7 @@ namespace SLAI
 		}
 	}
 
-	size_t Interpreter::findLabelPosition(std::string name)
+	size_t Interpreter::findLabelPosition(const std::string& name)
 	{
 		if (auto it = std::find_if(_tokensStack.begin(), _tokensStack.end(),
 			[&name](Token& t) { return t.getName() == name + ':'; }); it != _tokensStack.end()) 
