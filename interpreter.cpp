@@ -122,9 +122,9 @@ namespace SLAI
 	{
 		for (Token token : _tokensStack)
 		{
-			if (token.getType() == VARIABLE)
+			if (token.getType() == VARIABLE || token.getType() == CONST)
 			{
-				_variables[token.getName()] = 0;
+				_variables[token.getName()] = token.getType() == CONST ? std::stoi(token.getName()) : 0;
 			}
 		}
 	}
@@ -144,15 +144,6 @@ namespace SLAI
 		{
 			commands[command](target, value);
 		}
-	}
-
-	inline bool Interpreter::isArithmeticCommand(std::string command)
-	{
-		static const std::unordered_set<std::string> validCommands =
-		{
-			"mov", "add", "sub", "div", "mul"
-		};
-		return validCommands.find(command) != validCommands.end();
 	}
 
 	Interpreter::Interpreter(std::string program)
@@ -191,6 +182,23 @@ namespace SLAI
 		initVariablesMap();
 	}
 
+	static inline void throwFirstOperandIstVARIABLE(Token token)
+	{
+		if (token.getType() != VARIABLE)
+		{
+			throw "The first operand must be VARIABLE";
+		}
+	}
+
+	size_t Interpreter::findLabelPosition(std::string name)
+	{
+		if (auto it = std::find_if(_tokensStack.begin(), _tokensStack.end(),
+			[&name](Token& t) { return t.getName() == name + ':'; }); it != _tokensStack.end()) 
+		{
+			return it != _tokensStack.end() ? std::distance(_tokensStack.begin(), it) : -1;
+		}
+	}
+
 	void Interpreter::interpret()
 	{
 		std::string cmd;
@@ -207,7 +215,7 @@ namespace SLAI
 				cmd = token.getName();
 				if (token.getType() != COMMAND)
 				{
-					throw "The first token in the line must be of type COMMAND";
+					throw "The first token in the line must be COMMAND";
 				}
 				if (cmd == "end")
 				{
@@ -216,33 +224,21 @@ namespace SLAI
 				Token subtoken1 = _tokensStack[tokenIndex + 1];
 				if (cmd == "inc" || cmd == "dec")
 				{
-					if (subtoken1.getType() != VARIABLE)
-					{
-						throw "The first operand must be VARIABLE";
-					}
+					throwFirstOperandIstVARIABLE(subtoken1);
 					_variables[subtoken1.getName()] += cmd == "inc" ? 1 : -1;
 					tokenIndex += 2;
 					continue;
 				}
-				Token subtoken2 = _tokensStack[tokenIndex + 2];
-				if (isArithmeticCommand(cmd))
+				if (token.isJumpToken())
 				{
-					if (subtoken1.getType() != VARIABLE)
+					throwFirstOperandIstVARIABLE(subtoken1);
+					if (cmd == "jmp")
 					{
-						throw "The first operand must be VARIABLE";
+						tokenIndex = findLabelPosition(subtoken1.getName()) + 1;
+						continue;
 					}
-					if (subtoken2.getType() == VARIABLE || subtoken2.getType() == CONST)
-					{
-						execArithmeticCommand(cmd, _variables[subtoken1.getName()],
-							subtoken2.getType() == VARIABLE ? _variables[subtoken2.getName()] : std::stoi(subtoken2.getName()));
-					}
-					else
-					{
-						throw "Invalid operand type";
-					}
-					tokenIndex += 3;
 				}
-				else if (cmd == "msg")
+				if (cmd == "msg")
 				{
 					tokenIndex++;
 					int argsIndex = tokenIndex;
@@ -258,6 +254,33 @@ namespace SLAI
 					}
 					std::cout << "\n";
 					tokenIndex = argsIndex;
+					continue;
+				}
+				Token subtoken2 = _tokensStack[tokenIndex + 2];
+				if (token.isArithmeticToken())
+				{
+					throwFirstOperandIstVARIABLE(subtoken1);
+					if (subtoken2.getType() == VARIABLE || subtoken2.getType() == CONST)
+					{
+						execArithmeticCommand(cmd, _variables[subtoken1.getName()], _variables[subtoken2.getName()]);
+					}
+					else
+					{
+						throw "Invalid operand type";
+					}
+					tokenIndex += 3;
+				}
+				else if (cmd == "cmp")
+				{
+					if (subtoken1.getType() != CONST && subtoken1.getType() != VARIABLE ||
+						subtoken1.getType() != CONST && subtoken1.getType() != VARIABLE)
+					{
+						throw "CMP operands must be VARIABLE or CONST";
+					}
+					zFlag = _variables[subtoken1.getName()] == _variables[subtoken2.getName()];
+					sFlag = _variables[subtoken1.getName()] < _variables[subtoken2.getName()];
+					std::cout << zFlag << " " << sFlag << "\n";
+					tokenIndex += 3;
 				}
 			}
 		}

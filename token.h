@@ -28,6 +28,8 @@ namespace SLAI
 		void spotType();
 
 	public:
+		bool isJumpToken();
+		bool isArithmeticToken();
 		Token(std::string name);
 		std::string getName() { return _name; };
 		enum type getType() { return _type; };

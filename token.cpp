@@ -7,6 +7,24 @@
 
 namespace SLAI 
 {
+	bool Token::isArithmeticToken()
+	{
+		static const std::unordered_set<std::string> validCommands =
+		{
+			"mov", "add", "sub", "div", "mul"
+		};
+		return validCommands.find(_name) != validCommands.end();
+	}
+
+	bool Token::isJumpToken()
+	{
+		static const std::unordered_set<std::string> validCommands =
+		{
+			"jmp", "jne", "je", "jge", "jg", "jle", "jl", "call"
+		};
+		return validCommands.find(_name) != validCommands.end();
+	}
+
 	void Token::spotType()
 	{
 		static const std::unordered_set<std::string> commands = {
@@ -49,19 +67,13 @@ namespace SLAI
 
 	void Token::print(std::unordered_map<std::string, int>& variables)
 	{
-		switch (_type)
+		if (_type == CONST || _type == VARIABLE)
 		{
-		case CONST:
-			std::cout << std::stoi(_name);
-			break;
-		case VARIABLE:
 			std::cout << variables[_name];
-			break;
-		case STRING:
+		}
+		else if(_type == STRING)
+		{
 			std::cout << _name;
-			break;
-		default:
-			break;
 		}
 	}
 }
