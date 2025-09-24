@@ -133,7 +133,7 @@ namespace SLAI
 	{
 		static std::unordered_map<std::string, std::function<void(int&, int)>> commands =
 		{
-			{"mov", [](int& t, int v) { t = v; }},
+			{"mov", [](int& t, int v) { t = v;  }},
 			{"add", [](int& t, int v) { t += v; }},
 			{"sub", [](int& t, int v) { t -= v; }},
 			{"mul", [](int& t, int v) { t *= v; }},
@@ -144,6 +144,32 @@ namespace SLAI
 		{
 			commands[command](target, value);
 		}
+	}
+
+	inline bool Interpreter::execJumpCommand(const std::string& command, const std::string& labelName, int& tokenIndex)
+	{
+		static std::unordered_map<std::string, std::function<bool(const bool& , const bool&)>> commands =
+		{
+			{"je",   [](const bool& z, const bool& s) { return  z; }},
+			{"jne",  [](const bool& z, const bool& s) { return !z; }},
+			{"jg",   [](const bool& z, const bool& s) { return !z && !s; }},
+			{"jl",   [](const bool& z, const bool& s) { return s; }},
+			{"jle",  [](const bool& z, const bool& s) { return z ||  s; }},
+			{"jge",  [](const bool& z, const bool& s) { return z || !s; }},
+			{"jmp",  [](const bool& z, const bool& s) { return true; }},
+			{"call", [](const bool& z, const bool& s) { return true; }}
+		};
+
+		if ((commands.find(command) != commands.end()) && commands[command](zFlag, sFlag))
+		{
+			if (command == "call")
+			{
+				_callStack.push_back(tokenIndex + 2);
+			}
+			tokenIndex = findLabelPosition(labelName) + 1;
+			return true;
+		}
+		return false;
 	}
 
 	Interpreter::Interpreter(const std::string& program)
@@ -213,6 +239,16 @@ namespace SLAI
 				}
 				Token token = _tokensStack[tokenIndex];
 				cmd = token.getName();
+				if (cmd == "ret")
+				{
+					if (_callStack.empty())
+					{
+						throw "RET called without corresponding CALL - Stack underflow!";
+					}
+					tokenIndex = _callStack.back();
+					_callStack.pop_back();
+					continue;
+				}
 				if (token.getType() != COMMAND)
 				{
 					throw "The first token in the line must be COMMAND";
@@ -232,11 +268,11 @@ namespace SLAI
 				if (token.isJumpToken())
 				{
 					throwFirstOperandIstVARIABLE(subtoken1);
-					if (cmd == "jmp")
+					if (!execJumpCommand(cmd, subtoken1.getName(), tokenIndex))
 					{
-						tokenIndex = findLabelPosition(subtoken1.getName()) + 1;
-						continue;
+						tokenIndex += 2;
 					}
+					continue;
 				}
 				if (cmd == "msg")
 				{
@@ -279,7 +315,6 @@ namespace SLAI
 					}
 					zFlag = _variables[subtoken1.getName()] == _variables[subtoken2.getName()];
 					sFlag = _variables[subtoken1.getName()] < _variables[subtoken2.getName()];
-					std::cout << zFlag << " " << sFlag << "\n";
 					tokenIndex += 3;
 				}
 			}

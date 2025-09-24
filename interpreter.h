@@ -41,6 +41,8 @@ namespace SLAI
 
 		inline void execArithmeticCommand(const std::string& command, int& target, const int value);
 
+		inline bool execJumpCommand(const std::string& command, const std::string& labelName, int& tokenIndex);
+
 	public:
 		Interpreter(const std::string& program);
 
