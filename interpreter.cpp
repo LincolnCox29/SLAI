@@ -1,10 +1,28 @@
 #include "interpreter.h"
-
 #include <iostream>
 #include <unordered_set>
+#include <fstream>
 
 namespace SLAI 
 {
+	void Interpreter::loadProgramFromFile(const std::string& filename)
+	{
+		std::ifstream file(filename);
+		if (!file.is_open()) 
+		{
+			throw "Cannot open assembly file: ";
+		}
+
+		std::string programText((std::istreambuf_iterator<char>(file)),
+			std::istreambuf_iterator<char>());
+
+		if (file.fail() && !file.eof()) 
+		{
+			throw "Error reading file: ";
+		}
+		_programText = programText;
+	}
+
 	inline void Interpreter::initLines()
 	{
 		int currentLineIndex = 0;
@@ -172,9 +190,16 @@ namespace SLAI
 		return false;
 	}
 
-	Interpreter::Interpreter(const std::string& program)
+	Interpreter::Interpreter(const std::string& filename)
 	{
-		_programText = program;
+		try
+		{
+			loadProgramFromFile(filename);
+		}
+		catch (const char* error)
+		{
+			std::cerr << "ERROR: " << error << std::endl;
+		}
 		deleteComments();
 		deleteWasteSpaces();
 		deleteEmptyLines();

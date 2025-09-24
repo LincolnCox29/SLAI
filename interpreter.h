@@ -43,8 +43,10 @@ namespace SLAI
 
 		inline bool execJumpCommand(const std::string& command, const std::string& labelName, int& tokenIndex);
 
+		inline void loadProgramFromFile(const std::string& filename);
+
 	public:
-		Interpreter(const std::string& program);
+		Interpreter(const std::string& filename);
 
 		void interpret();
 	};

@@ -1,38 +1,14 @@
 #include <string>
 #include "interpreter.h"
+#include <fstream>
+#include <iostream>
 
-int main()
+int main(int argc, char* argv[])
 {
-	//std::string program1 = R"(
-	//mov a 4 
-	//inc a
- //   msg  '4 + 1 = ' a
-	//mov b 9
- //   dec b
- //   msg  '9 - 1 = ' b
- //   mul a 3
- //   msg  '5 * 3 = ' a
-	//add a b
-	//msg  '15 + 8 = ' a
-	//sub a 2
- //   msg  '23 - 2 = ' a
-	//div b 2
- //   msg  '8 / 2 = ' b
-	//end)";
-	//SLAI::Interpreter i1 = SLAI::Interpreter(program1);
-	//i1.interpret();
-
-	std::string program2 = R"(
-	mov a 5
-	call lbl
-	inc a
-	msg a
-	end
-
-	lbl:
-		mul a 100
-		msg a
-		ret)";
-	SLAI::Interpreter i2= SLAI::Interpreter(program2);
-	i2.interpret();
+	if (argc != 2)
+	{
+		std::cout << "ERROR: Wrong number of arguments\nExample: C:\\\\SLAI code.asm" << "\n";
+	}
+	SLAI::Interpreter interpreter = std::string(argv[1]);
+	interpreter.interpret();
 }
