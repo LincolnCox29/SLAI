@@ -1,6 +1,7 @@
-#include "interpreter.h"
+#include "../includes/interpreter.h"
 #include <iostream>
 #include <unordered_set>
+#include <algorithm>
 #include <fstream>
 
 namespace SLAI 

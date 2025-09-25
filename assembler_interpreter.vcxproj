@@ -19,13 +19,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="interpreter.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="token.cpp" />
+    <ClCompile Include="src\interpreter.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\token.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="interpreter.h" />
-    <ClInclude Include="token.h" />
+    <ClInclude Include="includes\interpreter.h" />
+    <ClInclude Include="includes\token.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
