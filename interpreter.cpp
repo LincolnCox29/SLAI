@@ -10,7 +10,7 @@ namespace SLAI
 		std::ifstream file(filename);
 		if (!file.is_open()) 
 		{
-			throw "Cannot open assembly file: ";
+			throw std::runtime_error("Cannot open assembly file: " + filename);
 		}
 
 		std::string programText((std::istreambuf_iterator<char>(file)),
@@ -18,7 +18,7 @@ namespace SLAI
 
 		if (file.fail() && !file.eof()) 
 		{
-			throw "Error reading file: ";
+			throw std::runtime_error("Cannot reading assembly file: " + filename);
 		}
 		_programText = programText;
 	}
@@ -196,9 +196,9 @@ namespace SLAI
 		{
 			loadProgramFromFile(filename);
 		}
-		catch (const char* error)
+		catch (const std::runtime_error& e)
 		{
-			std::cerr << "ERROR: " << error << std::endl;
+			std::cerr << "ERROR: " << e.what() << std::endl;
 		}
 		deleteComments();
 		deleteWasteSpaces();
@@ -236,9 +236,10 @@ namespace SLAI
 
 	static inline void throwFirstOperandIstVARIABLE(const Token& token)
 	{
+
 		if (token.getType() != VARIABLE)
 		{
-			throw "The first operand must be VARIABLE";
+			throw std::runtime_error("The first operand must be VARIABLE.");
 		}
 	}
 
@@ -261,7 +262,7 @@ namespace SLAI
 			{
 				if (tokenIndex + 1 > _tokensStack.size())
 				{
-					throw "The command \"end\" was not found.";
+					throw std::runtime_error("The command \"end\" was not found.");
 				}
 				Token token = _tokensStack[tokenIndex];
 				cmd = token.getName();
@@ -269,7 +270,7 @@ namespace SLAI
 				{
 					if (_callStack.empty())
 					{
-						throw "RET called without corresponding CALL - Stack underflow!";
+						throw std::runtime_error("RET called without corresponding CALL - Stack underflow!");
 					}
 					tokenIndex = _callStack.back();
 					_callStack.pop_back();
@@ -277,7 +278,7 @@ namespace SLAI
 				}
 				if (token.getType() != COMMAND)
 				{
-					throw "The first token in the line must be COMMAND";
+					throw std::runtime_error("Invalid number of operands.");
 				}
 				if (cmd == "end")
 				{
@@ -311,7 +312,7 @@ namespace SLAI
 						if (argsIndex == _tokensStack.size())
 						{
 							std::cout << "\n";
-							throw "The command \"end\" was not found.";
+							throw std::runtime_error("The command \"end\" was not found.");
 						}
 					}
 					std::cout << "\n";
@@ -328,16 +329,16 @@ namespace SLAI
 					}
 					else
 					{
-						throw "Invalid operand type";
+						throw std::runtime_error("Invalid operand type.");
 					}
 					tokenIndex += 3;
 				}
 				else if (cmd == "cmp")
 				{
 					if (subtoken1.getType() != CONST && subtoken1.getType() != VARIABLE ||
-						subtoken1.getType() != CONST && subtoken1.getType() != VARIABLE)
+						subtoken2.getType() != CONST && subtoken2.getType() != VARIABLE)
 					{
-						throw "CMP operands must be VARIABLE or CONST";
+						throw std::runtime_error("CMP operands must be VARIABLE or CONST");
 					}
 					zFlag = _variables[subtoken1.getName()] == _variables[subtoken2.getName()];
 					sFlag = _variables[subtoken1.getName()] < _variables[subtoken2.getName()];
@@ -345,9 +346,9 @@ namespace SLAI
 				}
 			}
 		}
-		catch (const char* error)
+		catch (const std::runtime_error& e)
 		{
-			std::cerr << "ERROR: " << error << std::endl;
+			std::cerr << "ERROR: " << e.what() << std::endl;
 		}
 	}
 }

@@ -27,7 +27,8 @@ namespace SLAI
 
 	void Token::spotType()
 	{
-		static const std::unordered_set<std::string> commands = {
+		static const std::unordered_set<std::string> commands = 
+		{
 			"mov", "inc", "dec", "add", "sub", "mul", "div",
 			"jmp", "cmp", "je", "jne", "jg", "jge", "jl", "jle",
 			"call", "ret", "msg", "end"
