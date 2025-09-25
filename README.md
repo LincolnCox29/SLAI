@@ -27,5 +27,5 @@ make --build .
 Using
 ---
 ```bash
-SLAI.exe myAsmFile.asm
+slai.exe myAsmFile.asm
 ```
