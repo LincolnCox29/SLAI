@@ -223,6 +223,7 @@ namespace SLAI
 		std::cout << "\n";
 #endif // DEBUG
 		tokenization();
+		delete[] _lines;
 #ifdef DEBUG
 		std::cout << "tokens:\n";
 		for (Token token : _tokensStack)
