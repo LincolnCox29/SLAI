@@ -7,6 +7,8 @@
 #include <string>
 #include "token.h"
 #include <functional>
+#include "lexer.h"
+#include <memory>
 
 namespace SLAI
 {
@@ -15,25 +17,10 @@ namespace SLAI
 	{
 	private:
 		std::unordered_map<std::string, int> _variables;
-		std::string* _lines;
-		int _linesLen;
-		std::string _programText;
 		std::vector<Token> _tokensStack;
 		std::vector<int> _callStack;
 		bool zFlag;
 		bool sFlag;
-
-		inline void initLines();
-
-		inline void countLines();
-
-		inline void deleteEmptyLines();
-
-		inline void deleteWasteSpaces();
-
-		inline void deleteComments();
-
-		void tokenization();
 
 		size_t findLabelPosition(const std::string& name);
 
@@ -43,10 +30,8 @@ namespace SLAI
 
 		inline bool execJumpCommand(const std::string& command, const std::string& labelName, int& tokenIndex);
 
-		inline void loadProgramFromFile(const std::string& filename);
-
 	public:
-		Interpreter(const std::string& filename);
+		Interpreter(std::vector<Token> tokensStack);
 
 		void interpret();
 	};

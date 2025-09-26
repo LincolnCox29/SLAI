@@ -12,6 +12,7 @@ set(SOURCES
     src/interpreter.cpp
     src/token.cpp
     src/main.cpp
+    src/lexer.cpp
 )
 
 # Create executable

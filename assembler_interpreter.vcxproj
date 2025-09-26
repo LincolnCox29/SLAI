@@ -20,11 +20,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\interpreter.cpp" />
+    <ClCompile Include="src\lexer.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\token.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="includes\freader.h" />
     <ClInclude Include="includes\interpreter.h" />
+    <ClInclude Include="includes\lexer.h" />
     <ClInclude Include="includes\token.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

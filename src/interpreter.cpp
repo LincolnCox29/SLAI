@@ -1,142 +1,13 @@
 #include "../includes/interpreter.h"
 #include <iostream>
 #include <unordered_set>
+#include <memory>
 #include <algorithm>
 #include <fstream>
+#include "../includes/lexer.h"
 
 namespace SLAI 
 {
-	void Interpreter::loadProgramFromFile(const std::string& filename)
-	{
-		std::ifstream file(filename);
-		if (!file.is_open()) 
-		{
-			throw std::runtime_error("Cannot open assembly file: " + filename);
-		}
-
-		std::string programText((std::istreambuf_iterator<char>(file)),
-			std::istreambuf_iterator<char>());
-
-		if (file.fail() && !file.eof()) 
-		{
-			throw std::runtime_error("Cannot reading assembly file: " + filename);
-		}
-		_programText = programText;
-	}
-
-	inline void Interpreter::initLines()
-	{
-		int currentLineIndex = 0;
-		int lineIndex = 0;
-		for (int i = 0; i < _programText.length(); i++)
-		{
-			if (_programText[i] == '\n')
-			{
-				_lines[lineIndex] = _programText.substr(currentLineIndex, i - currentLineIndex);
-				lineIndex++;
-				currentLineIndex = i + 1;
-			}
-		}
-		_lines[lineIndex] = _programText.substr(currentLineIndex, _programText.length() - 1);
-	}
-
-	inline void Interpreter::countLines()
-	{
-		_linesLen = std::count(_programText.begin(), _programText.end(), '\n') + 1;
-	}
-
-	inline void Interpreter::deleteEmptyLines()
-	{
-		for (int i = 0; i < _programText.length(); i++)
-		{
-			if (_programText[i] == '\n' && ((i == 0) || _programText[i - 1] == '\n'))
-			{
-				_programText.erase(i, 1);
-				i--;
-			}
-		}
-	}
-
-	inline void Interpreter::deleteWasteSpaces()
-	{
-		_programText.erase(std::remove(_programText.begin(), _programText.end(), '\t'), _programText.end());
-		for (int i = 0; i < _programText.length(); i++)
-		{
-			if (_programText[i] == ' ' && ((i == 0) || _programText[i + 1] == '\n' || _programText[i + 1] == ' '))
-			{
-				_programText.erase(i, 1);
-				i--;
-			}
-		}
-	}
-
-	inline void Interpreter::deleteComments()
-	{
-		for (int i = 0; i < _programText.length(); i++)
-		{
-			if (_programText[i] == ';')
-			{
-				const auto start_it = _programText.begin() + i;
-				const auto newline_it = std::find(start_it, _programText.end(), '\n');
-
-				if (newline_it != _programText.end())
-				{
-					_programText.erase(start_it, newline_it);
-				}
-				else
-				{
-					_programText.erase(start_it, _programText.end());
-				}
-			}
-		}
-	}
-
-	void Interpreter::tokenization()
-	{
-		for (int li = 0; li < _linesLen; li++)
-		{
-			const std::string& line = _lines[li];
-			int tokenStart = 0;
-			int si = 0;
-			bool isStr = 0;
-			while (si < line.length())
-			{
-				if (line[si] == '\'')
-				{
-					if (!isStr)
-					{
-						isStr = true;
-						si++;
-						continue;
-					}
-					else
-					{
-						if (si > tokenStart)
-						{
-							_tokensStack.push_back(Token(line.substr(tokenStart, si - tokenStart + 1)));
-						}
-						tokenStart = si + 1;
-						isStr = false;
-					}
-
-				}
-				else if (line[si] == ' ' && !isStr)
-				{
-					if (si > tokenStart)
-					{
-						_tokensStack.push_back(Token(line.substr(tokenStart, si - tokenStart)));
-					}
-					tokenStart = si + 1;
-				}
-				si++;
-			}
-			if (tokenStart < line.length())
-			{
-				_tokensStack.push_back(Token(line.substr(tokenStart)));
-			}
-		}
-	}
-
 	inline void Interpreter::initVariablesMap()
 	{
 		for (const Token& token : _tokensStack)
@@ -191,47 +62,9 @@ namespace SLAI
 		return false;
 	}
 
-	Interpreter::Interpreter(const std::string& filename)
+	Interpreter::Interpreter(std::vector<Token> tokensStack)
 	{
-		try
-		{
-			loadProgramFromFile(filename);
-		}
-		catch (const std::runtime_error& e)
-		{
-			std::cerr << "ERROR: " << e.what() << std::endl;
-		}
-		deleteComments();
-		deleteWasteSpaces();
-		deleteEmptyLines();
-#ifdef DEBUG
-		std::cout << "input code:\n" << _programText << "\n\n";
-#endif // DEBUG
-		countLines();
-#ifdef DEBUG
-		std::cout << "number of lines: " << _linesLen << "\n\n";
-#endif // DEBUG
-		_lines = new std::string[_linesLen];
-		initLines();
-#ifdef DEBUG
-		std::cout << "lines of code:\n";
-		for (int i = 0; i < _linesLen; i++)
-		{
-			std::string lineWithVisibleSpaces = std::string(_lines[i]);
-			std::replace(lineWithVisibleSpaces.begin(), lineWithVisibleSpaces.end(), ' ', '_');
-			std::cout << lineWithVisibleSpaces << "\n";
-		}
-		std::cout << "\n";
-#endif // DEBUG
-		tokenization();
-		delete[] _lines;
-#ifdef DEBUG
-		std::cout << "tokens:\n";
-		for (Token token : _tokensStack)
-		{
-			std::cout << token.getName() << "   " << token.getType() << "\n";
-		}
-#endif // DEBUG
+		_tokensStack = tokensStack;
 		initVariablesMap();
 	}
 
@@ -247,7 +80,7 @@ namespace SLAI
 	size_t Interpreter::findLabelPosition(const std::string& name)
 	{
 		if (auto it = std::find_if(_tokensStack.begin(), _tokensStack.end(),
-			[&name](Token& t) { return t.getName() == name + ':'; }); it != _tokensStack.end()) 
+			[&name](Token& t) { return t.getName() == name + ':'; }); it != _tokensStack.end())
 		{
 			return it != _tokensStack.end() ? std::distance(_tokensStack.begin(), it) : -1;
 		}
