@@ -20,12 +20,12 @@ Building
 mkdir build
 cd build
 cmake ..
-make --build .
+cmake --build .
 ```
 2. Add SLAI to PATH
 
 Using
 ---
 ```bash
-SLAI.exe myAsmFile.asm
+slai.exe myAsmFile.asm
 ```
