@@ -1,13 +1,22 @@
-mov input 10
-mov result 1
-mov d input 
-call factorial
-msg input '! = ' result
+mov input 7
+mov a 0
+mov b 1
+mov i 2
+mov result 0 
+call fibonacci
+msg 'Fibonacci sequence ' input ' = ' result
 end
 
-factorial:
-    mul result d         ; r *= d
-    dec d                ; i--
-    cmp d 1
-    jg  factorial        ; if (d < 1) jump 
+fibonacci:
+    call sum
+    mov a b
+    mov b result
+    inc i
+    cmp i input
+    jle fibonacci
+    ret
+
+sum:
+    mov result a
+    add result b
     ret

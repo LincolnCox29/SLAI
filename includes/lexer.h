@@ -12,31 +12,17 @@ namespace SLAI
 	class Lexer
 	{
 	private:
-		std::string* _lines;
 		int _linesLen;
 		std::string _programText;
 
-		void initLines();
-
-		void countLines();
-
-		void deleteEmptyLines();
-
-		void deleteWasteSpaces();
-
-		void deleteComments();
+		void preprocessCode();
 
 	public:
 
 		Lexer(std::string programText)
 		{
 			_programText = programText;
-			deleteComments();
-			deleteWasteSpaces();
-			deleteEmptyLines();
-			countLines();
-			_lines = new std::string[_linesLen];
-			initLines();
+			preprocessCode();
 		}
 
 		std::vector<Token> tokenization();
