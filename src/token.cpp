@@ -2,7 +2,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <iomanip>
-
+#include <variant>
 #include <iostream>
 
 namespace SLAI 
@@ -40,6 +40,13 @@ namespace SLAI
 			return;
 		}
 		catch (const std::invalid_argument& e) {}
+		try
+		{
+			std::stof(_name);
+			_type = CONST;
+			return;
+		}
+		catch (const std::invalid_argument& e) {}
 		if (_name[0] == '\'' && _name.back() == '\'')
 		{
 			_type = STRING;
@@ -66,11 +73,18 @@ namespace SLAI
 		spotType();
 	}
 
-	void Token::print(std::unordered_map<std::string, int>& variables)
+	void Token::print(std::unordered_map<std::string, std::variant<int, double>>& variables)
 	{
 		if (_type == CONST || _type == VARIABLE)
 		{
-			std::cout << variables[_name];
+			if (std::holds_alternative<double>(variables[_name]))
+			{
+				std::cout << std::get<double>(variables[_name]);
+			}
+			else
+			{
+				std::cout << std::get<int>(variables[_name]);
+			}
 		}
 		else if(_type == STRING)
 		{

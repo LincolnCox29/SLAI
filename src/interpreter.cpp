@@ -12,28 +12,68 @@ namespace SLAI
 	{
 		for (const Token& token : _tokensStack)
 		{
-			if (token.getType() == VARIABLE || token.getType() == CONST)
+			if (token.getType() == CONST)
 			{
-				_variables[token.getName()] = token.getType() == CONST ? std::stoi(token.getName()) : 0;
+				const std::string& value = token.getName();
+				if (value.find('.') != std::string::npos ||
+					value.find('e') != std::string::npos)
+				{
+					_variables[value] = std::stod(value);
+				}
+				else
+				{
+					_variables[value] = std::stoi(value);
+				}
+			}
+			else 
+			{
+				_variables[token.getName()] = 0;
 			}
 		}
 	}
 
-	inline void Interpreter::execArithmeticCommand(const std::string& command, int& target, const int value)
+	inline void Interpreter::execArithmeticCommand(
+		const std::string& command,
+		std::variant<int, double>& target,
+		const std::variant<int, double>& value)
 	{
-		static std::unordered_map<std::string, std::function<void(int&, int)>> commands =
+		auto visitor = [&](auto&& target_val, auto&& value_val) 
 		{
-			{"mov", [](int& t, int v) { t = v;  }},
-			{"add", [](int& t, int v) { t += v; }},
-			{"sub", [](int& t, int v) { t -= v; }},
-			{"mul", [](int& t, int v) { t *= v; }},
-			{"div", [](int& t, int v) { if (v != 0) t /= v; }}
-		};
+			using TargetType = std::decay_t<decltype(target_val)>;
+			using ValueType = std::decay_t<decltype(value_val)>;
 
-		if (commands.find(command) != commands.end())
-		{
-			commands[command](target, value);
-		}
+			if constexpr (std::is_arithmetic_v<TargetType> && std::is_arithmetic_v<ValueType>) {
+				if (command == "mov")
+				{
+					target = value_val;
+				}
+				else if (command == "add")
+				{
+					target = target_val + value_val;
+				}
+				else if (command == "sub")
+				{
+					target = target_val - value_val;
+				}
+				else if (command == "mul")
+				{
+					target = target_val * value_val;
+				}
+				else if (command == "div")
+				{
+					if (value_val == 0)
+					{
+						throw std::runtime_error("Division by zero");
+					}
+					target = target_val / value_val;
+				}
+			}
+			else
+			{
+				throw std::runtime_error("Invalid types for arithmetic operation");
+			}
+		};
+		std::visit(visitor, target, value);
 	}
 
 	inline bool Interpreter::execJumpCommand(const std::string& command, const std::string& labelName, int& tokenIndex)
@@ -122,7 +162,14 @@ namespace SLAI
 				if (cmd == "inc" || cmd == "dec")
 				{
 					throwFirstOperandIstVARIABLE(subtoken1);
-					_variables[subtoken1.getName()] += cmd == "inc" ? 1 : -1;
+					if (std::holds_alternative<double>(_variables[subtoken1.getName()]))
+					{
+						std::get<double>(_variables[subtoken1.getName()]) += cmd == "inc" ? 1.0 : -1.0;
+					}
+					else
+					{
+						std::get<int>(_variables[subtoken1.getName()]) += cmd == "inc" ? 1 : -1;
+					}
 					tokenIndex += 2;
 					continue;
 				}

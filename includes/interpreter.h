@@ -9,6 +9,7 @@
 #include <functional>
 #include "lexer.h"
 #include <memory>
+#include <variant>
 
 namespace SLAI
 {
@@ -16,7 +17,8 @@ namespace SLAI
 	class Interpreter
 	{
 	private:
-		std::unordered_map<std::string, int> _variables;
+
+		std::unordered_map<std::string, std::variant<int, double>> _variables;
 		std::vector<Token> _tokensStack;
 		std::vector<int> _callStack;
 		bool zFlag;
@@ -26,7 +28,7 @@ namespace SLAI
 
 		inline void initVariablesMap();
 
-		inline void execArithmeticCommand(const std::string& command, int& target, const int value);
+		inline void execArithmeticCommand(const std::string& command, std::variant<int, double>& target, const std::variant<int, double>& value);
 
 		inline bool execJumpCommand(const std::string& command, const std::string& labelName, int& tokenIndex);
 
