@@ -73,7 +73,7 @@ namespace SLAI
 		spotType();
 	}
 
-	void Token::print(std::unordered_map<std::string, std::variant<int, double>>& variables)
+	void Token::print(std::unordered_map<std::string, variable>& variables)
 	{
 		if (_type == CONST || _type == VARIABLE)
 		{

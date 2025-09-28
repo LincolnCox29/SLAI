@@ -34,8 +34,8 @@ namespace SLAI
 
 	inline void Interpreter::execArithmeticCommand(
 		const std::string& command,
-		std::variant<int, double>& target,
-		const std::variant<int, double>& value)
+		variable& target,
+		const variable& value)
 	{
 		auto visitor = [&](auto&& target_val, auto&& value_val) 
 		{
