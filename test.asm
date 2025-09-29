@@ -1,4 +1,4 @@
-mov celsius 36.6
+inc celsius
 mov fahrenheit celsius
 mul fahrenheit 9.0
 div fahrenheit 5.0

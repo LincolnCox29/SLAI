@@ -1,14 +1,16 @@
 #include "../includes/interpreter.h"
 #include <iostream>
 #include <unordered_set>
+#include <unordered_map>
 #include <memory>
 #include <algorithm>
 #include <fstream>
 #include "../includes/lexer.h"
+#include "../includes/variable.h"
 
-namespace SLAI 
+namespace SLAI
 {
-	inline void Interpreter::initVariablesMap()
+	inline void Interpreter::initConstVariables()
 	{
 		for (const Token& token : _tokensStack)
 		{
@@ -18,73 +20,62 @@ namespace SLAI
 				if (value.find('.') != std::string::npos ||
 					value.find('e') != std::string::npos)
 				{
-					_variables[value] = std::stod(value);
+					_variables.emplace(value, Variable(std::stod(value)));
 				}
 				else
 				{
-					_variables[value] = std::stoi(value);
+					_variables.emplace(value, Variable(std::stoi(value)));
 				}
-			}
-			else 
-			{
-				_variables[token.getName()] = 0;
 			}
 		}
 	}
 
 	inline void Interpreter::execArithmeticCommand(
 		const std::string& command,
-		variable& target,
-		const variable& value)
+		Variable& target,
+		Variable& value)
 	{
-		auto visitor = [&](auto&& target_val, auto&& value_val) 
+		auto visitor = [&](auto&& t, auto&& v)
 		{
-			using TargetType = std::decay_t<decltype(target_val)>;
-			using ValueType = std::decay_t<decltype(value_val)>;
+			using TargetType = std::decay_t<decltype(t)>;
+			using ValueType = std::decay_t<decltype(v)>;
 
-			if constexpr (std::is_arithmetic_v<TargetType> && std::is_arithmetic_v<ValueType>) {
-				if (command == "mov")
+			if constexpr (std::is_arithmetic_v<TargetType> && std::is_arithmetic_v<ValueType>) 
+			{
+				if (command == "add")
 				{
-					target = value_val;
-				}
-				else if (command == "add")
-				{
-					target = target_val + value_val;
+					t = t + v;
 				}
 				else if (command == "sub")
 				{
-					target = target_val - value_val;
+					t = t - v;
 				}
 				else if (command == "mul")
 				{
-					target = target_val * value_val;
+					t = t * v;
 				}
 				else if (command == "div")
 				{
-					if (value_val == 0)
+					if (v == 0)
 					{
 						throw std::runtime_error("Division by zero");
 					}
-					target = target_val / value_val;
+					t = t / v;
 				}
 			}
-			else
-			{
-				throw std::runtime_error("Invalid types for arithmetic operation");
-			}
 		};
-		std::visit(visitor, target, value);
+		std::visit(visitor, target.getValue(), value.getValue());
 	}
 
 	inline bool Interpreter::execJumpCommand(const std::string& command, const std::string& labelName, int& tokenIndex)
 	{
-		static std::unordered_map<std::string, std::function<bool(const bool& , const bool&)>> commands =
+		static std::unordered_map<std::string, std::function<bool(const bool&, const bool&)>> commands =
 		{
 			{"je",   [](const bool& z, const bool& s) { return  z; }},
 			{"jne",  [](const bool& z, const bool& s) { return !z; }},
 			{"jg",   [](const bool& z, const bool& s) { return !z && !s; }},
 			{"jl",   [](const bool& z, const bool& s) { return s; }},
-			{"jle",  [](const bool& z, const bool& s) { return z ||  s; }},
+			{"jle",  [](const bool& z, const bool& s) { return z || s; }},
 			{"jge",  [](const bool& z, const bool& s) { return z || !s; }},
 			{"jmp",  [](const bool& z, const bool& s) { return true; }},
 			{"call", [](const bool& z, const bool& s) { return true; }}
@@ -102,18 +93,19 @@ namespace SLAI
 		return false;
 	}
 
-	Interpreter::Interpreter(std::vector<Token> tokensStack)
-	{
-		_tokensStack = tokensStack;
-		initVariablesMap();
-	}
-
 	static inline void throwFirstOperandIstVARIABLE(const Token& token)
 	{
-
 		if (token.getType() != VARIABLE)
 		{
 			throw std::runtime_error("The first operand must be VARIABLE.");
+		}
+	}
+
+	inline void Interpreter::throwUndefinedVariable(const std::string& varName)
+	{
+		if (!_variables.count(varName))
+		{
+			throw std::runtime_error("Undefined variable");
 		}
 	}
 
@@ -124,10 +116,12 @@ namespace SLAI
 		{
 			return it != _tokensStack.end() ? std::distance(_tokensStack.begin(), it) : -1;
 		}
+		throw std::runtime_error("Label: \"" + name + "\" not found");
 	}
 
 	void Interpreter::interpret()
 	{
+		initConstVariables();
 		std::string cmd;
 		int tokenIndex = 0;
 		try
@@ -162,13 +156,20 @@ namespace SLAI
 				if (cmd == "inc" || cmd == "dec")
 				{
 					throwFirstOperandIstVARIABLE(subtoken1);
-					if (std::holds_alternative<double>(_variables[subtoken1.getName()]))
+					throwUndefinedVariable(subtoken1.getName());
+					Variable& var = _variables.at(subtoken1.getName());
+
+					if (var.is<double>())
 					{
-						std::get<double>(_variables[subtoken1.getName()]) += cmd == "inc" ? 1.0 : -1.0;
+						var.getValue<double>() += cmd == "inc" ? 1.0 : -1.0;
 					}
-					else
+					else if (var.is<int>())
 					{
-						std::get<int>(_variables[subtoken1.getName()]) += cmd == "inc" ? 1 : -1;
+						var.getValue<int>() += cmd == "inc" ? 1 : -1;
+					}
+					else if (var.is<uintptr_t>())
+					{
+						var.getValue<uintptr_t>() += cmd == "inc" ? 1 : -1;
 					}
 					tokenIndex += 2;
 					continue;
@@ -186,9 +187,19 @@ namespace SLAI
 				{
 					tokenIndex++;
 					int argsIndex = tokenIndex;
-					while (_tokensStack[argsIndex].getType() != COMMAND)
+					while (_tokensStack[argsIndex].getType() != COMMAND && 
+						   _tokensStack[argsIndex].getType() != LABEL)
 					{
-						_tokensStack[argsIndex].print(_variables);
+						const Token& arg = _tokensStack[argsIndex];
+						if (arg.getType() == VARIABLE)
+						{
+							throwUndefinedVariable(arg.getName());
+							std::cout << _variables.at(arg.getName());
+						}
+						else if (arg.getType() == STRING)
+						{
+							std::cout << arg.getName();
+						}
 						argsIndex++;
 						if (argsIndex == _tokensStack.size())
 						{
@@ -204,9 +215,41 @@ namespace SLAI
 				if (token.isArithmeticToken())
 				{
 					throwFirstOperandIstVARIABLE(subtoken1);
+					throwUndefinedVariable(subtoken1.getName());
 					if (subtoken2.getType() == VARIABLE || subtoken2.getType() == CONST)
 					{
-						execArithmeticCommand(cmd, _variables[subtoken1.getName()], _variables[subtoken2.getName()]);
+						throwUndefinedVariable(subtoken2.getName());
+						execArithmeticCommand(cmd, _variables.at(subtoken1.getName()), _variables.at(subtoken2.getName()));
+					}
+					else
+					{
+						throw std::runtime_error("Invalid operand type.");
+					}
+					tokenIndex += 3;
+				}
+				else if (cmd == "mov")
+				{
+					if (subtoken2.getType() == VARIABLE || subtoken2.getType() == CONST)
+					{
+						const std::string& var1 = subtoken1.getName();
+						const std::string& var2 = subtoken2.getName();
+
+						auto it1 = _variables.find(var1);
+						auto it2 = _variables.find(var2);
+
+						if (it2 == _variables.end()) 
+						{
+							throw std::runtime_error("Undefined variable");
+						}
+
+						if (it1 != _variables.end()) 
+						{
+							it1->second.getValue() = it2->second.getValue();
+						}
+						else 
+						{
+							_variables.emplace(var1, it2->second.getValue());
+						}
 					}
 					else
 					{
@@ -221,8 +264,16 @@ namespace SLAI
 					{
 						throw std::runtime_error("CMP operands must be VARIABLE or CONST");
 					}
-					zFlag = _variables[subtoken1.getName()] == _variables[subtoken2.getName()];
-					sFlag = _variables[subtoken1.getName()] < _variables[subtoken2.getName()];
+					if (_variables.count(subtoken1.getName()) &&
+						_variables.count(subtoken2.getName()))
+					{
+						zFlag = _variables.at(subtoken1.getName()).getValue() == _variables.at(subtoken2.getName()).getValue();
+						sFlag = _variables.at(subtoken1.getName()).getValue() < _variables.at(subtoken2.getName()).getValue();
+					}
+					else
+					{
+						throw std::runtime_error("Undefined variable");
+					}
 					tokenIndex += 3;
 				}
 			}
@@ -230,6 +281,7 @@ namespace SLAI
 		catch (const std::runtime_error& e)
 		{
 			std::cerr << "ERROR: " << e.what() << std::endl;
+			return;
 		}
 	}
 }

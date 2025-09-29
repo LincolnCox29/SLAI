@@ -9,6 +9,7 @@
 #include <functional>
 #include "lexer.h"
 #include <memory>
+#include "../includes/variable.h"
 
 namespace SLAI
 {
@@ -17,7 +18,7 @@ namespace SLAI
 	{
 	private:
 
-		std::unordered_map<std::string, variable> _variables;
+		varTable _variables;
 		std::vector<Token> _tokensStack;
 		std::vector<int> _callStack;
 		bool zFlag;
@@ -25,14 +26,21 @@ namespace SLAI
 
 		size_t findLabelPosition(const std::string& name);
 
-		inline void initVariablesMap();
-
-		inline void execArithmeticCommand(const std::string& command, variable& target, const variable& value);
+		inline void execArithmeticCommand(const std::string& command, Variable& target, Variable& value);
 
 		inline bool execJumpCommand(const std::string& command, const std::string& labelName, int& tokenIndex);
 
+		inline void throwUndefinedVariable(const std::string& varName);
+
+		inline void initConstVariables();
+
 	public:
-		Interpreter(std::vector<Token> tokensStack);
+		Interpreter(std::vector<Token> tokensStack) 
+		{
+			_tokensStack = tokensStack;
+			zFlag = false;
+			sFlag = false;
+		}
 
 		void interpret();
 	};

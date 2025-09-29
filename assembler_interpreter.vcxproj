@@ -29,6 +29,7 @@
     <ClInclude Include="includes\interpreter.h" />
     <ClInclude Include="includes\lexer.h" />
     <ClInclude Include="includes\token.h" />
+    <ClInclude Include="includes\variable.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

@@ -11,7 +11,7 @@ namespace SLAI
 	{
 		static const std::unordered_set<std::string> validCommands =
 		{
-			"mov", "add", "sub", "div", "mul"
+			"add", "sub", "div", "mul"
 		};
 		return validCommands.find(_name) != validCommands.end();
 	}
@@ -71,24 +71,5 @@ namespace SLAI
 		_name = name;
 
 		spotType();
-	}
-
-	void Token::print(std::unordered_map<std::string, variable>& variables)
-	{
-		if (_type == CONST || _type == VARIABLE)
-		{
-			if (std::holds_alternative<double>(variables[_name]))
-			{
-				std::cout << std::get<double>(variables[_name]);
-			}
-			else
-			{
-				std::cout << std::get<int>(variables[_name]);
-			}
-		}
-		else if(_type == STRING)
-		{
-			std::cout << _name;
-		}
 	}
 }
