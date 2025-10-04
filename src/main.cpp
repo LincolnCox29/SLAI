@@ -23,5 +23,14 @@ int main(int argc, char* argv[])
 		std::cerr << "ERROR: " << e.what() << std::endl;
 	}
 	std::vector<SLAI::Token> tokensStack = SLAI::Lexer(programText).tokenization();
-	SLAI::Interpreter(tokensStack).interpret();
+	try
+	{
+		SLAI::Interpreter(tokensStack).interpret();
+	}
+	catch (const std::runtime_error& e)
+	{
+		std::cerr << "ERROR: " << e.what() << std::endl;
+		return 1;
+	}
+	return 0;
 }
