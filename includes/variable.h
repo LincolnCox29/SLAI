@@ -11,7 +11,7 @@
 
 namespace SLAI
 {
-	using untypedVar = std::variant<int, double, uintptr_t>;
+	using untypedVar = std::variant<int, double, int*, double*>;
 
 	class Variable
 	{
@@ -20,8 +20,9 @@ namespace SLAI
 
 	public:
 		Variable(int val) : _value(val) {}
+		Variable(int* val) : _value(val) {}
 		Variable(double val) : _value(val) {}
-		Variable(uintptr_t val) : _value(val) {}
+		Variable(double* val) : _value(val) {}
 		Variable(untypedVar val) : _value(val) {}
 
 		template<typename T>
@@ -34,6 +35,39 @@ namespace SLAI
 		bool sameTypeAs(const Variable& other) const 
 		{
 			return _value.index() == other._value.index();
+		}
+
+		bool operator==(const Variable& var) const
+		{
+			return _value == var._value;
+		}
+
+		bool operator<(const Variable& var) const
+		{
+			return _value < var._value;
+		}
+
+		void operator=(const Variable& var)
+		{
+			_value = var._value;
+		}
+
+		Variable operator++(int)
+		{
+			if (is<double>())     getValue<double>()++;
+			else if (is<int>())   getValue<int>()++;
+			else if (is<int*>())    getValue<int*>()++;
+			else if (is<double*>()) getValue<double*>()++;
+			return *this;
+		}
+
+		Variable operator--(int)
+		{
+			if (is<double>())     getValue<double>()--;
+			else if (is<int>())   getValue<int>()--;
+			else if (is<int*>())    getValue<int*>()--;
+			else if (is<double*>()) getValue<double*>()--;
+			return *this;
 		}
 	};
 
@@ -49,9 +83,13 @@ namespace SLAI
 		{
 			return os << var.getValue<double>();
 		}
-		else if (var.is<uintptr_t>())
+		else if (var.is<int*>())
 		{
-			return os << "0x" << std::hex << var.getValue<uintptr_t>();
+			return os << "0x" << std::hex << reinterpret_cast<uintptr_t>(var.getValue<int*>());
+		}
+		else if (var.is<double*>())
+		{
+			return os << "0x" << std::hex << reinterpret_cast<uintptr_t>(var.getValue<double*>());
 		}
 	}
 }

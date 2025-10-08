@@ -40,19 +40,19 @@ namespace SLAI
 			using TargetType = std::decay_t<decltype(t)>;
 			using ValueType = std::decay_t<decltype(v)>;
 
-			if constexpr (std::is_arithmetic_v<TargetType> && std::is_arithmetic_v<ValueType>) 
+			if constexpr (std::is_arithmetic_v<TargetType> && std::is_arithmetic_v<ValueType>)
 			{
 				if (command == "add")
 				{
-					t = t + v;
+					t += v;
 				}
 				else if (command == "sub")
 				{
-					t = t - v;
+					t -= v;
 				}
 				else if (command == "mul")
 				{
-					t = t * v;
+					t *= v;
 				}
 				else if (command == "div")
 				{
@@ -60,8 +60,27 @@ namespace SLAI
 					{
 						throw std::runtime_error("Division by zero");
 					}
-					t = t / v;
+					t /= v;
 				}
+			}
+			else if constexpr (std::is_pointer_v<TargetType> && std::is_integral_v<ValueType>)
+			{
+				if (command == "add")
+				{
+					t += v;
+				}
+				else if (command == "sub")
+				{
+					t -= v;
+				}
+				else
+				{
+					throw std::runtime_error("Only add and sub supported for pointer and integer");
+				}
+			}
+			else
+			{
+				throw std::runtime_error("Unsupported operand types for arithmetic operation");
 			}
 		};
 		std::visit(visitor, target.getValue(), value.getValue());
@@ -119,6 +138,43 @@ namespace SLAI
 		throw std::runtime_error("Label: \"" + name + "\" not found");
 	}
 
+	inline void Interpreter::execAlloc(std::string ptrName, int size, std::string type)
+	{
+		void* memory;
+		if (type == "int")
+		{
+			memory = malloc(size * sizeof(int));
+			_variables.emplace(ptrName, reinterpret_cast<int*>(memory));
+		}
+		else if (type == "double")
+		{
+			memory = malloc(size * sizeof(double));
+			_variables.emplace(ptrName, reinterpret_cast<double*>(memory));
+		}
+		else
+		{
+			throw std::runtime_error("Unsupported type: " + type);
+		}
+	}
+
+	inline void Interpreter::execFree(Variable& ptrVar)
+	{
+		if (ptrVar.is<double*>())
+		{
+			free(ptrVar.getValue<double*>());
+			ptrVar.getValue<double*>() = nullptr;
+		}
+		else if (ptrVar.is<int*>())
+		{
+			free(ptrVar.getValue<int*>());
+			ptrVar.getValue<int*>() = nullptr;
+		}
+		else
+		{
+			throw std::runtime_error("Invalid free");
+		}
+	}
+
 	void Interpreter::interpret()
 	{
 		initConstVariables();
@@ -157,18 +213,8 @@ namespace SLAI
 				throwUndefinedVariable(subtoken1.getName());
 				Variable& var = _variables.at(subtoken1.getName());
 
-				if (var.is<double>())
-				{
-					var.getValue<double>() += cmd == "inc" ? 1.0 : -1.0;
-				}
-				else if (var.is<int>())
-				{
-					var.getValue<int>() += cmd == "inc" ? 1 : -1;
-				}
-				else if (var.is<uintptr_t>())
-				{
-					var.getValue<uintptr_t>() += cmd == "inc" ? 1 : -1;
-				}
+				cmd == "inc" ? var++ : var--;
+
 				tokenIndex += 2;
 				continue;
 			}
@@ -209,6 +255,16 @@ namespace SLAI
 				tokenIndex = argsIndex;
 				continue;
 			}
+			if (cmd == "free")
+			{
+				throwFirstOperandIstVARIABLE(subtoken1);
+				throwUndefinedVariable(subtoken1.getName());
+				
+				execFree(_variables.at(subtoken1.getName()));
+
+				tokenIndex += 2;
+				continue;
+			}
 			Token subtoken2 = _tokensStack[tokenIndex + 2];
 			if (token.isArithmeticToken())
 			{
@@ -224,6 +280,7 @@ namespace SLAI
 					throw std::runtime_error("Invalid operand type.");
 				}
 				tokenIndex += 3;
+				continue;
 			}
 			else if (cmd == "mov")
 			{
@@ -242,7 +299,7 @@ namespace SLAI
 
 					if (it1 != _variables.end())
 					{
-						it1->second.getValue() = it2->second.getValue();
+						it1->second = it2->second;
 					}
 					else
 					{
@@ -254,6 +311,7 @@ namespace SLAI
 					throw std::runtime_error("Invalid operand type.");
 				}
 				tokenIndex += 3;
+				continue;
 			}
 			else if (cmd == "cmp")
 			{
@@ -265,14 +323,38 @@ namespace SLAI
 				if (_variables.count(subtoken1.getName()) &&
 					_variables.count(subtoken2.getName()))
 				{
-					zFlag = _variables.at(subtoken1.getName()).getValue() == _variables.at(subtoken2.getName()).getValue();
-					sFlag = _variables.at(subtoken1.getName()).getValue() < _variables.at(subtoken2.getName()).getValue();
+					zFlag = _variables.at(subtoken1.getName()) == _variables.at(subtoken2.getName());
+					sFlag = _variables.at(subtoken1.getName()) < _variables.at(subtoken2.getName());
 				}
 				else
 				{
 					throw std::runtime_error("Undefined variable");
 				}
 				tokenIndex += 3;
+				continue;
+			}
+			Token subtoken3 = _tokensStack[tokenIndex + 3];
+			if (cmd == "alloc")
+			{
+				if (subtoken1.getType() != VARIABLE ||
+					subtoken2.getType() != VARIABLE && subtoken2.getType() != CONST ||
+					subtoken3.getType() != VARIABLE)
+				{
+					throw std::runtime_error("Invalid operand type.");
+				}
+				if (_variables.count(subtoken1.getName()))
+				{
+					throw std::runtime_error("Allocate memory for already allocated");
+				}
+				void* memory = nullptr;
+				Variable& sizeVar = _variables.at(subtoken2.getName());
+				int& size = sizeVar.getValue<int>();
+				if (!sizeVar.is<int>() || sizeVar.getValue<int>() < 0)
+				{
+					throw std::runtime_error("Memory size must be positive INT");
+				}
+				execAlloc(subtoken1.getName(), size, subtoken3.getName());
+				tokenIndex += 4;
 			}
 		}
 	}

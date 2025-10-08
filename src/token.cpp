@@ -31,7 +31,7 @@ namespace SLAI
 		{
 			"mov", "inc", "dec", "add", "sub", "mul", "div",
 			"jmp", "cmp", "je", "jne", "jg", "jge", "jl", "jle",
-			"call", "ret", "msg", "end"
+			"call", "ret", "msg", "end", "alloc", "free"
 		};
 		try
 		{

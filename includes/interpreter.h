@@ -34,6 +34,10 @@ namespace SLAI
 
 		inline void initConstVariables();
 
+		inline void execAlloc(std::string ptrName, int size, std::string type);
+
+		inline void execFree(Variable& ptrVar);
+
 	public:
 		Interpreter(std::vector<Token> tokensStack) 
 		{

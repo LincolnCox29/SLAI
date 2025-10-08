@@ -1,7 +1,7 @@
-mov celsius 36.6
-mov fahrenheit celsius
-mul fahrenheit 9.0
-div fahrenheit 5.0
-add fahrenheit 32.0
-msg celsius 'C = ' fahrenheit 'F'
+alloc ptr 5 int
+msg 'ptr = ' ptr
+add ptr 5
+msg 'ptr += 5 ' ptr
+sub ptr 5
+free ptr
 end
