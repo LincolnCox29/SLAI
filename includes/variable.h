@@ -29,6 +29,27 @@ namespace SLAI
 		bool is() const { return std::holds_alternative<T>(_value); }
 		template<typename T>
 		T& getValue() { return std::get<T>(_value); }
+		template<typename T>
+		std::remove_pointer_t<T>& getDerefValue() 
+		{
+			return *std::get<T>(_value);
+		}
+
+		void incdec(std::string cmd, type tokenType)
+		{
+			if (tokenType == VARIABLE)
+			{
+				if (is<double>())       getValue<double>() += cmd == "inc" ? 1.0 : -1.0;
+				else if (is<int>())     getValue<int>() += cmd == "inc" ? 1 : -1;
+				else if (is<int*>())    getValue<int*>() += cmd == "inc" ? 1 : -1;
+				else if (is<double*>()) getValue<double*>() += cmd == "inc" ? 1 : -1;
+			}
+			else
+			{
+				if (is<int*>())         getDerefValue<int*>() += cmd == "inc" ? 1 : -1;
+				else if (is<double*>()) getDerefValue<double*>() += cmd == "inc" ? 1 : -1;
+			}
+		}
 
 		untypedVar& getValue() { return _value; }
 
@@ -52,22 +73,16 @@ namespace SLAI
 			_value = var._value;
 		}
 
-		Variable operator++(int)
+		inline void printDeref()
 		{
-			if (is<double>())     getValue<double>()++;
-			else if (is<int>())   getValue<int>()++;
-			else if (is<int*>())    getValue<int*>()++;
-			else if (is<double*>()) getValue<double*>()++;
-			return *this;
-		}
-
-		Variable operator--(int)
-		{
-			if (is<double>())     getValue<double>()--;
-			else if (is<int>())   getValue<int>()--;
-			else if (is<int*>())    getValue<int*>()--;
-			else if (is<double*>()) getValue<double*>()--;
-			return *this;
+			if (is<int*>())
+			{
+				std::cout << getDerefValue<int*>();
+			}
+			else if (is<double*>())
+			{
+				std::cout << getDerefValue<double*>();
+			}
 		}
 	};
 

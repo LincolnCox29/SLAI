@@ -1,7 +1,7 @@
 alloc ptr 5 int
-msg 'ptr = ' ptr
-add ptr 5
-msg 'ptr += 5 ' ptr
-sub ptr 5
+mov [ptr] 10
+msg '*ptr = ' [ptr]
+inc [ptr]
+msg 'ptr[0]++ = ' [ptr]  
 free ptr
 end

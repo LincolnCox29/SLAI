@@ -75,7 +75,7 @@ namespace SLAI
 				}
 				else
 				{
-					throw std::runtime_error("Only add and sub supported for pointer and integer");
+					throw std::runtime_error("Only \"add\" and \"sub\" supported for pointer arithmetic");
 				}
 			}
 			else
@@ -114,7 +114,7 @@ namespace SLAI
 
 	static inline void throwFirstOperandIstVARIABLE(const Token& token)
 	{
-		if (token.getType() != VARIABLE)
+		if (token.getType() != VARIABLE && token.getType() != DEREF)
 		{
 			throw std::runtime_error("The first operand must be VARIABLE.");
 		}
@@ -211,9 +211,8 @@ namespace SLAI
 			{
 				throwFirstOperandIstVARIABLE(subtoken1);
 				throwUndefinedVariable(subtoken1.getName());
-				Variable& var = _variables.at(subtoken1.getName());
 
-				cmd == "inc" ? var++ : var--;
+				_variables.at(subtoken1.getName()).incdec(cmd, subtoken1.getType());
 
 				tokenIndex += 2;
 				continue;
@@ -239,6 +238,11 @@ namespace SLAI
 					{
 						throwUndefinedVariable(arg.getName());
 						std::cout << _variables.at(arg.getName());
+					}
+					else if (arg.getType() == DEREF)
+					{
+						throwUndefinedVariable(arg.getName());
+						_variables.at(arg.getName()).printDeref();
 					}
 					else if (arg.getType() == STRING)
 					{
@@ -284,7 +288,8 @@ namespace SLAI
 			}
 			else if (cmd == "mov")
 			{
-				if (subtoken2.getType() == VARIABLE || subtoken2.getType() == CONST)
+				if (subtoken1.getType() == VARIABLE &&
+					(subtoken2.getType() == VARIABLE || subtoken2.getType() == CONST))
 				{
 					const std::string& var1 = subtoken1.getName();
 					const std::string& var2 = subtoken2.getName();
@@ -306,9 +311,91 @@ namespace SLAI
 						_variables.emplace(var1, it2->second.getValue());
 					}
 				}
+				else if (subtoken1.getType() == DEREF && (subtoken2.getType() == VARIABLE || subtoken2.getType() == CONST))
+				{
+					const std::string& ptrName = subtoken1.getName();
+					const std::string& valueName = subtoken2.getName();
+
+					if (!_variables.count(ptrName))
+					{
+						throw std::runtime_error("Undefined pointer: " + ptrName);
+					}
+
+					Variable& ptrVar = _variables.at(ptrName);
+					Variable& valueVar = _variables.at(valueName);
+
+					if (ptrVar.is<int*>())
+					{
+						if (valueVar.is<int>())
+						{
+							*ptrVar.getValue<int*>() = valueVar.getValue<int>();
+						}
+						else
+						{
+							throw std::runtime_error("Type mismatch: cannot assign non-int to int*");
+						}
+					}
+					else if (ptrVar.is<double*>())
+					{
+						if (valueVar.is<double>())
+						{
+							*ptrVar.getValue<double*>() = valueVar.getValue<double>();
+						}
+						else
+						{
+							throw std::runtime_error("Type mismatch: cannot assign non-double to double*");
+						}
+					}
+					else
+					{
+						throw std::runtime_error("Cannot dereference non-pointer variable");
+					}
+				}
+				else if (subtoken1.getType() == VARIABLE && subtoken2.getType() == DEREF)
+				{
+					const std::string& varName = subtoken1.getName();
+					const std::string& ptrName = subtoken2.getName();
+
+					if (!_variables.count(ptrName))
+					{
+						throw std::runtime_error("Undefined pointer: " + ptrName);
+					}
+
+					Variable& ptrVar = _variables.at(ptrName);
+					auto it1 = _variables.find(varName);
+
+					if (ptrVar.is<int*>())
+					{
+						int value = *ptrVar.getValue<int*>();
+						if (it1 != _variables.end())
+						{
+							it1->second = Variable(value);
+						}
+						else
+						{
+							_variables.emplace(varName, Variable(value));
+						}
+					}
+					else if (ptrVar.is<double*>())
+					{
+						double value = *ptrVar.getValue<double*>();
+						if (it1 != _variables.end())
+						{
+							it1->second = Variable(value);
+						}
+						else
+						{
+							_variables.emplace(varName, Variable(value));
+						}
+					}
+					else
+					{
+						throw std::runtime_error("Cannot dereference non-pointer variable");
+					}
+				}
 				else
 				{
-					throw std::runtime_error("Invalid operand type.");
+					throw std::runtime_error("Invalid operand type for mov");
 				}
 				tokenIndex += 3;
 				continue;

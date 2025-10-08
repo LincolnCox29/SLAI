@@ -15,7 +15,8 @@ namespace SLAI
 		VARIABLE,
 		COMMAND,
 		LABEL,
-		STRING
+		STRING,
+		DEREF
 	};
 
 	class Token

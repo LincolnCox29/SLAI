@@ -52,6 +52,11 @@ namespace SLAI
 			_type = STRING;
 			_name = _name.substr(1, _name.length() - 2);
 		}
+		else if (_name[0] == '[' && _name.back() == ']')
+		{
+			_type = DEREF;
+			_name = _name.substr(1, _name.length() - 2);
+		}
 		else if (commands.find(_name) != commands.end())
 		{
 			_type = COMMAND;
