@@ -51,6 +51,18 @@ namespace SLAI
 			}
 		}
 
+		void setPtrValue(Variable derefVar)
+		{
+			if (is<int*>())
+			{
+				*getValue<int*>() = derefVar.getValue<int>();
+			}
+			else if (is<double*>())
+			{
+				*getValue<double*>() = derefVar.getValue<double>();
+			}
+		}
+
 		untypedVar& getValue() { return _value; }
 
 		bool sameTypeAs(const Variable& other) const 

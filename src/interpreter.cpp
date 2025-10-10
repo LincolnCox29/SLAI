@@ -272,12 +272,42 @@ namespace SLAI
 			Token subtoken2 = _tokensStack[tokenIndex + 2];
 			if (token.isArithmeticToken())
 			{
-				throwFirstOperandIstVARIABLE(subtoken1);
 				throwUndefinedVariable(subtoken1.getName());
-				if (subtoken2.getType() == VARIABLE || subtoken2.getType() == CONST)
+				throwUndefinedVariable(subtoken2.getName());
+				Variable& target = _variables.at(subtoken1.getName());
+				Variable& value = _variables.at(subtoken2.getName());
+				if ((subtoken1.getType() == VARIABLE || subtoken1.getType() == CONST) &&
+					(subtoken2.getType() == VARIABLE || subtoken2.getType() == CONST))
 				{
-					throwUndefinedVariable(subtoken2.getName());
-					execArithmeticCommand(cmd, _variables.at(subtoken1.getName()), _variables.at(subtoken2.getName()));
+					execArithmeticCommand(cmd, target, value);
+				}
+				else if (subtoken1.getType() == DEREF && (subtoken2.getType() == VARIABLE || subtoken2.getType() == CONST))
+				{
+					if (target.is<int*>())
+					{
+						Variable tmpDerefVar = Variable(target.getDerefValue<int*>());
+						execArithmeticCommand(cmd, tmpDerefVar, value);
+						target.setPtrValue(tmpDerefVar);
+					}
+					else if (target.is<double*>())
+					{
+						Variable tmpDerefVar = Variable(target.getDerefValue<double*>());
+						execArithmeticCommand(cmd, tmpDerefVar, value);
+						target.setPtrValue(tmpDerefVar);
+					}
+				}
+				else if (subtoken2.getType() == DEREF && (subtoken1.getType() == VARIABLE || subtoken1.getType() == CONST))
+				{
+					if (value.is<int*>())
+					{
+						Variable tmpDerefVar = Variable(value.getDerefValue<int*>());
+						execArithmeticCommand(cmd, target, tmpDerefVar);
+					}
+					else if (value.is<double*>())
+					{
+						Variable tmpDerefVar = Variable(value.getDerefValue<double*>());
+						execArithmeticCommand(cmd, target, tmpDerefVar);
+					}
 				}
 				else
 				{
