@@ -86,6 +86,21 @@ namespace SLAI
 		std::visit(visitor, target.getValue(), value.getValue());
 	}
 
+	template<typename T>
+	inline void Interpreter::derefArithmeticWithVar(std::string cmd, Variable& target, Variable& value)
+	{
+		Variable tmpDerefVar = Variable(target.getDerefValue<T>());
+		execArithmeticCommand(cmd, tmpDerefVar, value);
+		target.setPtrValue(tmpDerefVar);
+	}
+
+	template<typename T>
+	inline void Interpreter::varArithmeticWithDeref(std::string cmd, Variable& target, Variable& value)
+	{
+		Variable tmpDerefVar = Variable(value.getDerefValue<T>());
+		execArithmeticCommand(cmd, target, tmpDerefVar);
+	}
+
 	inline bool Interpreter::execJumpCommand(const std::string& command, const std::string& labelName, int& tokenIndex)
 	{
 		static std::unordered_map<std::string, std::function<bool(const bool&, const bool&)>> commands =
@@ -202,7 +217,7 @@ namespace SLAI
 			{
 				throw std::runtime_error("Invalid number of operands.");
 			}
-			if (cmd == "end")
+			if (cmd == "end") 
 			{
 				return;
 			}
@@ -283,31 +298,17 @@ namespace SLAI
 				}
 				else if (subtoken1.getType() == DEREF && (subtoken2.getType() == VARIABLE || subtoken2.getType() == CONST))
 				{
-					if (target.is<int*>())
-					{
-						Variable tmpDerefVar = Variable(target.getDerefValue<int*>());
-						execArithmeticCommand(cmd, tmpDerefVar, value);
-						target.setPtrValue(tmpDerefVar);
-					}
-					else if (target.is<double*>())
-					{
-						Variable tmpDerefVar = Variable(target.getDerefValue<double*>());
-						execArithmeticCommand(cmd, tmpDerefVar, value);
-						target.setPtrValue(tmpDerefVar);
-					}
+					if (target.is<int*>()) 
+						derefArithmeticWithVar<int*>(cmd, target, value);
+					else if (target.is<double*>()) 
+						derefArithmeticWithVar<double*>(cmd, target, value);
 				}
 				else if (subtoken2.getType() == DEREF && (subtoken1.getType() == VARIABLE || subtoken1.getType() == CONST))
 				{
-					if (value.is<int*>())
-					{
-						Variable tmpDerefVar = Variable(value.getDerefValue<int*>());
-						execArithmeticCommand(cmd, target, tmpDerefVar);
-					}
+					if (value.is<int*>()) 
+						varArithmeticWithDeref<int*>(cmd, target, value);
 					else if (value.is<double*>())
-					{
-						Variable tmpDerefVar = Variable(value.getDerefValue<double*>());
-						execArithmeticCommand(cmd, target, tmpDerefVar);
-					}
+						varArithmeticWithDeref<double*>(cmd, target, value);
 				}
 				else
 				{

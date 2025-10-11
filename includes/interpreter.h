@@ -28,6 +28,12 @@ namespace SLAI
 
 		inline void execArithmeticCommand(const std::string& command, Variable& target, Variable& value);
 
+		template<typename T>
+		inline void derefArithmeticWithVar(std::string cmd, Variable& target, Variable& value);
+
+		template<typename T>
+		inline void varArithmeticWithDeref(std::string cmd, Variable& target, Variable& value);
+
 		inline bool execJumpCommand(const std::string& command, const std::string& labelName, int& tokenIndex);
 
 		inline void throwUndefinedVariable(const std::string& varName);
