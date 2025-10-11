@@ -213,6 +213,11 @@ namespace SLAI
 				_callStack.pop_back();
 				continue;
 			}
+			if (token.getType() == LABEL)
+			{
+				tokenIndex++;
+				continue;
+			}
 			if (token.getType() != COMMAND)
 			{
 				throw std::runtime_error("Invalid number of operands.");
